@@ -1,9 +1,32 @@
+GREEN = "\033[92m"
+RESET = "\033[0m"
+W = 56
+MAX_NAME = 20
+line = "+" + "-" * W + "+"
+
+
+def row(text):
+    print(f"| {text:<{W - 2}} |")
+
+
+def title(text):
+    print(f"|{text:^{W}}|")
+
+
+def error(text):
+    print(line)
+    row(text)
+    print(line)
+
+
+def make_ticket_no(text):
+    total = 0
+    for ch in text:
+        total = (total * 31 + ord(ch)) % 100000
+    return str(total).zfill(5)
+
 
 def main():
-    GREEN = "\033[92m"
-    W = 56
-    line = "+" + "-" * W + "+"
-
     train_art = r"""
       _______________________________________________
      /  _____    _____    _____    _____    _____    |
@@ -12,17 +35,23 @@ def main():
   |   JAKARTA TRAIN TICKET SYSTEM                    |
   |__________________________________________________|
      (O)  (O)                          (O)  (O)
-  ==========================================================
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  """
+    ==========================================================
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    """
 
     print(GREEN + train_art)
     print(line)
 
-    name = input("| Name      : ")
+    name = input("| Name      : ").strip()
+    if name == "":
+        error("Name cannot be empty")
+        return
+    if len(name) > MAX_NAME:
+        name = name[:MAX_NAME]
+
     print(line)
-    print(f"| {'Choose train':<{W - 2}} |")
-    print(f"| {'[1] MRT   [2] KRL   [3] LRT':<{W - 2}} |")
+    row("Choose train")
+    row("[1] MRT   [2] KRL   [3] LRT")
     print(line)
     choice = input("| Choice    : ")
 
@@ -48,39 +77,35 @@ def main():
         first_price = 5000
         next_price = 7000
     else:
-        print(line)
-        print(f"| {'Train not available, sir ' + name:<{W - 2}} |")
-        print(line)
+        error("Train not available, sir " + name)
         return
 
     print(line)
-    print(f"|{train + ' STATIONS':^{W}}|")
+    title(train + " STATIONS")
     print(line)
     for i in range(len(station)):
-        print(f"| {'[' + str(i + 1) + '] ' + station[i]:<{W - 2}} |")
+        row("[" + str(i + 1) + "] " + station[i])
     print(line)
 
     start_input = input("| From (no.) : ")
     end_input = input("| To   (no.) : ")
 
     if not start_input.isdigit() or not end_input.isdigit():
-        print(line)
-        print(f"| {'Please enter station numbers, sir ' + name:<{W - 2}} |")
-        print(line)
+        error("Please enter station numbers, sir " + name)
         return
 
     start = int(start_input) - 1
     end = int(end_input) - 1
 
     if start < 0 or start >= len(station) or end < 0 or end >= len(station):
-        print(line)
-        print(f"| {'Station not found, sir ' + name:<{W - 2}} |")
-        print(line)
+        error("Station not found, sir " + name)
         return
 
-    distance = end - start
-    if distance < 0:
-        distance = distance * -1
+    if start == end:
+        error("Departure and destination are the same, sir " + name)
+        return
+
+    distance = abs(end - start)
 
     price = 0
     for i in range(distance):
@@ -89,22 +114,22 @@ def main():
         else:
             price += next_price
 
-    ticket = str(abs(hash(name + station[start] + station[end])) % 100000).zfill(5)
+    ticket = make_ticket_no(name + station[start] + station[end])
 
     print(line)
-    print(f"|{'TICKET':^{W}}|")
+    title("TICKET")
     print(line)
-    print(f"| {'Passenger : ' + name:<{W - 2}} |")
-    print(f"| {'Train     : ' + train:<{W - 2}} |")
-    print(f"| {'From      : ' + station[start]:<{W - 2}} |")
-    print(f"| {'To        : ' + station[end]:<{W - 2}} |")
-    print(f"| {'Stops     : ' + str(distance):<{W - 2}} |")
-    print(f"| {'Price     : Rp' + str(price):<{W - 2}} |")
-    print(f"| {'Ticket No : ' + ticket:<{W - 2}} |")
+    row("Passenger : " + name)
+    row("Train     : " + train)
+    row("From      : " + station[start])
+    row("To        : " + station[end])
+    row("Stops     : " + str(distance))
+    row("Price     : Rp" + str(price))
+    row("Ticket No : " + ticket)
     print(line)
-    print(f"|{'Have a safe trip, sir ' + name + '!':^{W}}|")
+    title("Have a safe trip, sir " + name + "!")
     print(line)
 
 
 main()
-print("\033[0m", end="")
+print(RESET, end="")
