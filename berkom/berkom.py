@@ -1,3 +1,47 @@
+# Train Ticket Program
+# Books train tickets (MRT, KRL, LRT, and JR Yamanote): calculates the number of stations passed
+# and the ticket price, then displays the ticket as an ASCII box or a JR ticket
+ 
+# Group Members:
+# 18226008 Muhammad Faris Kautsar
+# 13226044 Putu Gede Bayu Eka Pradipa
+# 18126030 Ahmas Ghazi Izaaturahman
+# 13226008 Rafif Firza Izzan
+# 13226036 Radhiyya Adis Akmal
+ 
+# TRAIN TICKET BOOKING PROGRAM
+ 
+# GLOBAL VARIABLES
+# green          : string             - main green color of the display (hex)
+# dimGreen       : string             - dim green color for unselected options
+# black          : string             - background color
+# red            : string             - error text color
+# mono           : string             - name of the monospace font for the ASCII display
+# jp             : string             - name of the Japanese font for the JR ticket
+# brailleFont    : string             - name of the font for the braille art
+# paper          : string             - JR ticket paper color (light part)
+# paperDark      : string             - JR ticket paper color (dark part)
+# ink            : string             - JR ticket text color
+# halfTurn       : float              - half a turn in radians (the disk turns this much every second)
+# spinSeconds    : int                - length of one long disk animation in seconds (6 hours)
+# quarterTurn    : float              - a quarter turn in radians (for the sideways text on the JR ticket)
+# size           : int                - default font size
+# charWidth      : float              - width of one character relative to the font size
+# l              : int                - inner width of the ASCII ticket box
+# maxName        : int                - maximum length of the passenger name
+# line           : string             - border line of the ASCII ticket box
+# playlist       : list of tuples     - list of songs (title, file location)
+# trains         : dict               - data for each train: stations, prices, currency, loop line, sound
+# kanji          : dict               - JR station names in kanji
+# team           : list of strings    - list of group members (NIM - name)
+# titleArt       : string             - the 'Train Ticket' title as ASCII art
+# diskArt        : string             - drawing of the spinning music disk
+# brailleArt     : string             - first braille picture in the left panel
+# brailleArt2    : string             - second braille picture in the left panel
+# arts           : list of tuples     - list of left-panel pictures with their font sizes
+ 
+# Libraries used: random (random ticket number), flet (display), flet_audio (sound)
+
 # Library yang dipakai: random (nomor tiket acak), flet (tampilan), flet_audio (suara)
 import random
 
@@ -17,8 +61,10 @@ brailleFont = "Braille"
 paper = "#fcd9a8"
 paperDark = "#f4b877"
 ink = "#3b2f27"
-# Sudut putaran dalam radian (satu putaran penuh dan seperempat putaran)
-fullTurn = 6.283185307179586
+# Sudut putaran dalam radian (setengah putaran dan seperempat putaran)
+halfTurn = 3.141592653589793
+# Lama satu animasi putaran piringan (6 jam), jadi tidak perlu diulang-ulang
+spinSeconds = 6 * 60 * 60
 quarterTurn = 1.5707963267948966
 # Ukuran huruf standar dan lebar satu karakter (dibanding ukuran huruf)
 size = 16
@@ -105,80 +151,6 @@ Yb,_    88                                                Yb,_    88            
   gg,   88  ,8'    8I  i8'    ,8I   88   I8   8I   8I       gg,   88       88   i8'       I8P' "Yb,  I8, ,8I   ,I8,
    "Yb,,8P ,dP     Y8,,d8,   ,d8b,_,88,_,dP   8I   Yb,       "Yb,,8P     _,88,_,d8,_    _,d8    `Yb, `YbadP'  ,d88b,
      "Y8P' 8P      `Y8P"Y8888P"`Y88P""Y88P'   8I   `Y8         "Y8P'     8P""Y8P""Y8888PP88P      Y8888P"Y88888P""Y88'''
-
-# Gambar gerbong penumpang (disusun dari potongan string)
-coachWidth = 41
-coachArt = [
-    "  " + "_" * coachWidth,
-    " |" + ("  ____  " * 5).ljust(coachWidth) + "|",
-    " |" + (" |    | " * 5).ljust(coachWidth) + "|",
-    " |" + (" |____| " * 5).ljust(coachWidth) + "|",
-    " |" + "_" * coachWidth + "|",
-    " |" + "___|" + "_" * (coachWidth - 8) + "|___" + "|==",
-]
-# Roda gerbong penumpang
-coachWheelArt = [
-    "     /  \\  /  \\" + " " * 15 + "/  \\  /  \\",
-    "    | () || () |" + " " * 13 + "| () || () |",
-    "     \\__/  \\__/" + " " * 15 + "\\__/  \\__/",
-]
-
-# Gambar lokomotif uap
-locoArt = r"""
-                                       ____
-                    ____              |    |
-  ______________   |    |   ______    |    |
- |   ________   |__|____|__|______|___|____|____
- |  |  []  []|  |                               |\__
- |  |________|  |   ____________________________|   \__
- |______________|  |____________________________||_____ \
- |____|======|__|_________________________________|_____|>""".strip("\n").split("\n")
-
-# Dua frame roda lokomotif (batang penghubung naik-turun)
-wheelArts = [
-    r"""
-    /  \       /  \       /  \       /  \        __
-   | () |=====| () |=====| () |=====| () |      (__)
-    \__/       \__/       \__/       \__/""".strip("\n").split("\n"),
-    r"""
-    /  \       /  \       /  \       /  \        __
-   | () |     | () |     | () |     | () |      (__)
-    \__/=======\__/=======\__/=======\__/""".strip("\n").split("\n"),
-]
-
-
-# Dua frame asap dari cerobong
-smokeArts = [
-    r"""
-  (@@)   (  )   (@@@)   (  )    (@)
-                                    (    )
-                                         (@@@)
-                                            (  )""".strip("\n").split("\n"),
-    r"""
-    (  )   (@@)   ( )   (@@@)    ( )
-                                     (@@)
-                                         (    )
-                                            (@@)""".strip("\n").split("\n"),
-]
-
-
-# Fungsi untuk menggabungkan asap, gerbong, lokomotif, dan roda menjadi satu gambar kereta
-def makeTrain(frame):
-    tw = max(len(x) for x in coachArt)  # lebar gerbong
-    lw = max(len(x) for x in locoArt)  # lebar lokomotif
-    rows = []
-    for s in smokeArts[frame]:
-        rows.append(" " * (tw - 2) + s)
-    top = len(locoArt) - len(coachArt)  # selisih tinggi lokomotif dan gerbong
-    for i in range(len(locoArt)):
-        left = coachArt[i - top] if i >= top else ""
-        rows.append(left.ljust(tw) + locoArt[i])
-    wheels = wheelArts[frame]
-    for i in range(len(wheels)):
-        left = coachWheelArt[i] if i < len(coachWheelArt) else ""
-        rows.append(left.ljust(tw) + wheels[i])
-    return "\n".join(x.rstrip().ljust(tw + lw + 2) for x in rows)
-
 
 # Gambar piringan hitam (disk) yang berputar
 diskArt = r"""      ...   ....      
@@ -422,10 +394,9 @@ async def main(page: ft.Page):
     page.padding = 0
     page.window.maximized = True  # jendela langsung dibuat maksimal
 
-    # Dictionary untuk menyimpan keadaan aplikasi (kereta terpilih, musik, animasi, dll.)
-    state = {"train": "MRT", "audio": None, "music": None, "musicOn": True, "track": 0,
-             "spinning": False, "trainPhase": "reset", "frame": 0,
-             "trainAlive": False, "diskAlive": False, "puffAlive": False, "art": 0}
+    # Dictionary untuk menyimpan keadaan aplikasi (kereta terpilih, suara, musik, gambar)
+    state = {"train": "MRT", "audio": None, "music": None, "musicOn": True, "track": 0, "art": 0,
+             "spinning": False, "spinFrom": 0.0, "spinAt": None}
 
     # ---------- judul ----------
     titleWidth = max(len(x) for x in titleArt.splitlines())
@@ -598,7 +569,6 @@ async def main(page: ft.Page):
         priceText.value = ""
         await stopAudio()
         page.update()
-        kick()
 
     # Dijalankan saat stasiun asal dipilih
     def pickStart(e):
@@ -619,7 +589,6 @@ async def main(page: ft.Page):
     # ---------- halaman ----------
     # Fungsi tombol BUY TICKET: memeriksa isian lalu membuat tiket
     async def buyTicket(e):
-        kick()
         name = (nameField.value or "").strip()[:maxName]  # nama dipotong maksimal 20 huruf
         data, station, start, end = selected()
 
@@ -714,7 +683,7 @@ async def main(page: ft.Page):
         content=ft.Text(diskArt, font_family=mono, size=8, color=green, no_wrap=True,
                         style=ft.TextStyle(height=1.204)),
         rotate=ft.Rotate(angle=0, alignment=ft.Alignment.CENTER),
-        animate_rotation=ft.Animation(2000, ft.AnimationCurve.LINEAR),  # satu putaran memakan waktu 2 detik
+        animate_rotation=ft.Animation(300, ft.AnimationCurve.EASE_OUT),
     )
     # Tulisan lagu yang sedang diputar dan tombol pause
     nowPlaying = text("now playing", dimGreen, fontSize=11)
@@ -726,11 +695,11 @@ async def main(page: ft.Page):
         state["musicOn"] = not state["musicOn"]
         if state["musicOn"]:
             pauseLabel.value = "[ pause ]"
-            if not state["spinning"]:
-                spinNext()
+            startSpin()
             await startMusic()
         else:
             pauseLabel.value = "[ play ]"
+            stopSpin()
             await pauseMusic()
         page.update()
 
@@ -756,96 +725,42 @@ async def main(page: ft.Page):
         top=24, right=32,
     )
 
-    # Fungsi untuk memutar piringan satu putaran lagi (berhenti jika musik dijeda)
-    def spinNext(e=None):
-        if not state["musicOn"]:
-            state["spinning"] = False
-            return
+    # Fungsi untuk mengambil waktu sekarang (dari Flet, tanpa library tambahan)
+    def now():
+        return ft.DatePicker().current_date
+
+    # Fungsi untuk menghitung sudut piringan saat ini dari lama putaran yang sudah berjalan
+    def currentAngle():
+        if not state["spinning"]:
+            return disk.rotate.angle
+        seconds = (now() - state["spinAt"]).total_seconds()
+        seconds = min(seconds, spinSeconds)
+        return state["spinFrom"] + halfTurn * seconds
+
+    # Fungsi untuk memulai satu animasi putaran panjang (6 jam) dari sudut saat ini
+    def startSpin(e=None):
+        angle = currentAngle()
         state["spinning"] = True
-        angle = disk.rotate.angle + fullTurn
-        disk.rotate = ft.Rotate(angle=angle, alignment=ft.Alignment.CENTER)
+        state["spinFrom"] = angle
+        state["spinAt"] = now()
+        disk.animate_rotation = ft.Animation(spinSeconds * 1000, ft.AnimationCurve.LINEAR)
+        disk.rotate = ft.Rotate(angle=angle + halfTurn * spinSeconds, alignment=ft.Alignment.CENTER)
         disk.update()
 
-    # Dijalankan setiap kali satu putaran selesai, lalu memutar lagi
-    def diskEnded(e):
-        state["diskAlive"] = True
-        spinNext()
+    # Fungsi untuk menghentikan piringan pelan-pelan di sudut saat ini
+    def stopSpin():
+        angle = currentAngle()
+        state["spinning"] = False
+        disk.animate_rotation = ft.Animation(600, ft.AnimationCurve.EASE_OUT)
+        disk.rotate = ft.Rotate(angle=angle + 0.3, alignment=ft.Alignment.CENTER)
+        disk.update()
 
-    disk.on_animation_end = diskEnded
+    # Piringan mulai berputar setelah muncul di layar
+    def diskShown(e):
+        if state["musicOn"] and not state["spinning"]:
+            startSpin()
 
-    # ---------- kereta berjalan ----------
-    # Ukuran huruf kereta, dua frame gambar kereta, dan lebar kereta dalam piksel
-    trainSize = 10
-    trainFrames = [makeTrain(0), makeTrain(1)]
-    trainWidth = max(len(x) for x in trainFrames[0].splitlines()) * charWidth * trainSize
-    trainText = text(trainFrames[0], fontSize=trainSize)
-    # Kereta yang digeser dari kiri ke kanan
-    movingTrain = ft.Container(
-        content=trainText,
-        offset=ft.Offset(-1.2, 0),
-        animate_offset=ft.Animation(1, ft.AnimationCurve.LINEAR),
-    )
-    # Rel kereta
-    rail = text("=" * 400, dimGreen, fontSize=trainSize)
-    # Jalur kereta di bagian bawah layar
-    trainLane = ft.Container(
-        content=ft.Column([movingTrain, rail], spacing=0, tight=True),
-        left=0, right=0, bottom=16, clip_behavior=ft.ClipBehavior.HARD_EDGE,
-    )
-
-    # Lama perjalanan kereta dari kiri ke kanan (detik)
-    trainSeconds = 16
-
-    # Fungsi untuk menggerakkan kereta: kembali ke kiri, lalu berjalan ke kanan
-    def trainNext(e=None):
-        if state["trainPhase"] == "travel":
-            state["trainPhase"] = "reset"
-            movingTrain.animate_offset = ft.Animation(1, ft.AnimationCurve.LINEAR)
-            movingTrain.offset = ft.Offset(-1.2, 0)
-        else:
-            state["trainPhase"] = "travel"
-            target = (page.width or 1400) / trainWidth + 0.2
-            movingTrain.animate_offset = ft.Animation(trainSeconds * 1000, ft.AnimationCurve.LINEAR)
-            movingTrain.offset = ft.Offset(target, 0)
-        movingTrain.update()
-
-    # Dijalankan saat gerakan kereta selesai, lalu memulai gerakan berikutnya
-    def trainEnded(e):
-        state["trainAlive"] = True
-        trainNext()
-
-    movingTrain.on_animation_end = trainEnded
-
-    # Fungsi untuk mengganti frame asap dan roda
-    def puffNext(e=None):
-        state["frame"] = 1 - state["frame"]
-        trainText.value = trainFrames[state["frame"]]
-        puffTicker.opacity = state["frame"]
-        trainText.update()
-        puffTicker.update()
-
-    # Dijalankan setiap 0,25 detik (saat animasi penghitung waktu selesai)
-    def puffEnded(e):
-        state["puffAlive"] = True
-        puffNext()
-
-    # Penghitung waktu tak terlihat (ukuran 1x1) sebagai pengganti sleep
-    puffTicker = ft.Container(width=1, height=1, opacity=0,
-                              animate_opacity=ft.Animation(250, ft.AnimationCurve.LINEAR),
-                              on_animation_end=puffEnded, left=0, top=0)
-
-    # Fungsi untuk memulai animasi yang belum berjalan
-    def kick(e=None):
-        if not state["trainAlive"]:
-            trainNext()
-        if not state["diskAlive"] and state["musicOn"]:
-            spinNext()
-        if not state["puffAlive"]:
-            puffNext()
-
-    # Animasi dimulai setelah elemen muncul di layar
-    movingTrain.on_size_change = kick
-    disk.on_size_change = kick
+    disk.on_size_change = diskShown
 
     # ---------- panel kredit ----------
     # Gambar braille di panel kiri
@@ -898,7 +813,9 @@ async def main(page: ft.Page):
     def onResize(e):
         fitTitle()
         page.update()
-        kick()
+        # Ukuran jendela berubah (misalnya masuk layar penuh): putaran dilanjutkan dari sudut saat ini
+        if state["spinning"]:
+            startSpin()
 
     # Menghubungkan event keyboard dan ukuran layar
     page.on_keyboard_event = onKey
@@ -916,16 +833,19 @@ async def main(page: ft.Page):
     )
 
     # Menyusun semua bagian (urutan dari belakang ke depan)
-    page.add(ft.Stack([trainLane, puffTicker, centre, creditBox, diskBox], expand=True))
+    page.add(ft.Stack([centre, creditBox, diskBox], expand=True))
 
-    # Persiapan awal: judul, kereta MRT, layar penuh, animasi, dan musik
+    # Persiapan awal: judul, kereta MRT, musik, lalu layar penuh
     fitTitle()
     await pickTrain("MRT")
-    await page.get_device_info()
-    page.window.full_screen = True
-    page.update()
-    kick()
     page.run_task(startMusic)
+    # Layar penuh setelah jendela siap; jika gagal, jendela tetap maksimal
+    try:
+        await page.get_device_info()
+        page.window.full_screen = True
+        page.update()
+    except Exception:
+        pass
 
 # Menjalankan aplikasi (folder assets berisi font, musik, dan suara)
 ft.run(main, assets_dir="assets")
